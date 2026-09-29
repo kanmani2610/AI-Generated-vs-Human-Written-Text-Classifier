@@ -1,0 +1,13 @@
+scikit-learn
+numpy
+pandas
+scipy
+joblib
+fastapi
+uvicorn
+anthropic
+torch
+transformers
+python-multipart
+pypdf
+python-docx

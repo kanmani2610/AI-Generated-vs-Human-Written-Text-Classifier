@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffd9ec;
+    --bg-tile: #ffcbe4;
+    --panel: #fff0f7;
+    --ink: #5a3a4d;
+    --border: #b3557d;
+    --ai: #ff7aad;
+    --ai-dark: #d64d84;
+    --human: #9fe6c9;
+    --human-dark: #4bbf94;
+    --shadow: #b3557d;
+  }
+
+  * { box-sizing: border-box; image-rendering: pixelated; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(90deg, var(--bg-tile) 1px, transparent 1px),
+      linear-gradient(var(--bg-tile) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .shell {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 28px;
+    color: var(--ai-dark);
+    text-shadow: 3px 3px 0 #fff, 6px 6px 0 var(--border);
+    margin: 0 0 20px;
+    letter-spacing: 2px;
+  }
+
+  header p {
+    font-size: 20px;
+    color: var(--ink);
+    max-width: 46ch;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .pixel-box {
+    background: var(--panel);
+    border: 4px solid var(--border);
+    box-shadow: 6px 6px 0 var(--shadow);
+    padding: 20px;
+    border-radius: 0;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .tab-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    background: var(--panel);
+    color: var(--ink);
+    border: 3px solid var(--border);
+    box-shadow: 4px 4px 0 var(--shadow);
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+
+  .tab-btn.active {
+    background: var(--ai);
+    color: #fff;
+  }
+
+  .tab-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 var(--shadow);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  textarea {
+    width: 100%;
+    min-height: 220px;
+    background: #fff;
+    border: 3px solid var(--border);
+    color: var(--ink);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    line-height: 1.5;
+    padding: 14px;
+    resize: vertical;
+  }
+
+  textarea:focus { outline: none; }
+
+  .dropzone {
+    border: 3px dashed var(--border);
+    background: #fff;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    cursor: pointer;
+  }
+
+  .dropzone.dragover {
+    background: #ffe6f2;
+  }
+
+  .dropzone p {
+    margin: 6px 0;
+  }
+
+  .dropzone .hint {
+    font-size: 15px;
+    color: var(--border);
+  }
+
+  #fileInput { display: none; }
+
+  .file-chosen {
+    margin-top: 10px;
+    font-size: 18px;
+    color: var(--ai-dark);
+  }
+
+  .go-btn {
+    margin-top: 18px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    background: var(--ai);
+    color: #fff;
+    border: 3px solid var(--border);
+    box-shadow: 4px 4px 0 var(--shadow);
+    padding: 14px 20px;
+    cursor: pointer;
+  }
+
+  .go-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 var(--shadow);
+  }
+
+  .go-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .result-panel {
+    margin-top: 32px;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--border);
+    font-size: 19px;
+    padding: 20px 0;
+  }
+
+  .verdict-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .verdict {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+  }
+
+  .verdict.ai { color: var(--ai-dark); }
+  .verdict.human { color: var(--human-dark); }
+
+  .confidence-text {
+    font-size: 20px;
+    color: var(--ink);
+  }
+
+  .conf-track {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .conf-block {
+    width: 14px;
+    height: 20px;
+    background: #fff;
+    border: 2px solid var(--border);
+  }
+
+  .conf-block.filled.ai { background: var(--ai); }
+  .conf-block.filled.human { background: var(--human); }
+
+  .signals-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+
+  .signal {
+    background: #fff;
+    border: 2px solid var(--border);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  .signal-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+
+  .signal-name { color: var(--ink); text-transform: capitalize; }
+  .signal-z { color: var(--border); }
+
+  .signal-bar-track {
+    position: relative;
+    height: 8px;
+    background: #ffe6f2;
+    margin-bottom: 6px;
+  }
+
+  .signal-bar-center {
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .signal-bar-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--ai-dark);
+  }
+
+  .signal-reason {
+    color: var(--ink);
+    font-size: 16px;
+  }
+
+  .explanation {
+    margin-top: 20px;
+    padding: 14px;
+    background: #fff;
+    border: 2px solid var(--border);
+    font-size: 18px;
+    line-height: 1.5;
+  }
+
+  .preview-box {
+    margin-top: 16px;
+    padding: 12px;
+    background: #fff;
+    border: 2px dashed var(--border);
+    font-size: 15px;
+    color: var(--border);
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .error {
+    color: var(--ai-dark);
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .endpoint-note {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 15px;
+    color: var(--border);
+  }
+
+  .doc-summary {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .doc-verdict {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .doc-verdict.ai { color: var(--ai-dark); }
+  .doc-verdict.human { color: var(--human-dark); }
+  .doc-verdict.mixed { color: #a86bd6; }
+
+  .doc-meta {
+    font-size: 18px;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+
+  .split-bar {
+    display: flex;
+    height: 22px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+  }
+
+  .split-bar-ai { background: var(--ai); }
+  .split-bar-human { background: var(--human); }
+
+  .chunks-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    margin: 24px 0 14px;
+  }
+
+  .chunk-card {
+    background: #fff;
+    border: 2px solid var(--border);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+
+  .chunk-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .chunk-badge {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    padding: 4px 8px;
+    color: #fff;
+  }
+
+  .chunk-badge.ai { background: var(--ai-dark); }
+  .chunk-badge.human { background: var(--human-dark); }
+
+  .chunk-conf {
+    font-size: 15px;
+    color: var(--border);
+  }
+
+  .chunk-preview {
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>WORDPRINT</h1>
+      <p>Paste text or upload a file — pull its linguistic fingerprint and see whether it reads human or AI.</p>
+    </header>
+
+    <div class="pixel-box">
+      <div class="tabs">
+        <button class="tab-btn active" id="tabTextBtn" onclick="switchTab('text')">Paste text</button>
+        <button class="tab-btn" id="tabFileBtn" onclick="switchTab('file')">Upload file</button>
+      </div>
+
+      <div class="tab-panel active" id="tabText">
+        <textarea id="input" placeholder="Paste text here..."></textarea>
+        <br>
+        <button class="go-btn" id="analyzeTextBtn" onclick="analyzeText()">Analyze</button>
+      </div>
+
+      <div class="tab-panel" id="tabFile">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <p>Click to choose a file</p>
+          <p class="hint">.pdf &nbsp; .docx &nbsp; .txt</p>
+          <div class="file-chosen" id="fileChosen"></div>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt">
+        <br>
+        <button class="go-btn" id="analyzeFileBtn" onclick="analyzeFile()" disabled>Analyze file</button>
+      </div>
+
+      <div class="result-panel" id="result">
+        <div class="empty-state">No analysis yet.</div>
+      </div>
+    </div>
+
+    <div class="endpoint-note">connected to http://localhost:8000</div>
+  </div>
+
+<script>
+let selectedFile = null;
+
+function switchTab(tab) {
+  document.getElementById('tabText').classList.toggle('active', tab === 'text');
+  document.getElementById('tabFile').classList.toggle('active', tab === 'file');
+  document.getElementById('tabTextBtn').classList.toggle('active', tab === 'text');
+  document.getElementById('tabFileBtn').classList.toggle('active', tab === 'file');
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  selectedFile = e.target.files[0] || null;
+  document.getElementById('fileChosen').textContent = selectedFile ? selectedFile.name : '';
+  document.getElementById('analyzeFileBtn').disabled = !selectedFile;
+});
+
+const dropzone = document.getElementById('dropzone');
+['dragover', 'dragenter'].forEach(evt =>
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); })
+);
+['dragleave', 'drop'].forEach(evt =>
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); })
+);
+dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    selectedFile = file;
+    document.getElementById('fileInput').files = e.dataTransfer.files;
+    document.getElementById('fileChosen').textContent = file.name;
+    document.getElementById('analyzeFileBtn').disabled = false;
+  }
+});
+
+async function analyzeText() {
+  const text = document.getElementById('input').value.trim();
+  if (!text) {
+    document.getElementById('result').innerHTML = '<div class="error">Paste some text first.</div>';
+    return;
+  }
+  await runAnalysis(async () => {
+    const res = await fetch('http://localhost:8000/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    return res.json();
+  }, 'analyzeTextBtn');
+}
+
+async function analyzeFile() {
+  if (!selectedFile) return;
+  await runAnalysis(async () => {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    const res = await fetch('http://localhost:8000/analyze-file', {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.detail || ('Server returned ' + res.status));
+    }
+    return res.json();
+  }, 'analyzeFileBtn');
+}
+
+async function runAnalysis(fetchFn, btnId) {
+  const resultEl = document.getElementById('result');
+  const btn = document.getElementById(btnId);
+  const originalText = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  resultEl.innerHTML = '<div class="empty-state">Running analysis...</div>';
+
+  try {
+    const data = await fetchFn();
+    if (data.chunks) {
+      renderDocumentResult(data);
+    } else {
+      renderResult(data);
+    }
+  } catch (err) {
+    resultEl.innerHTML = '<div class="error">' + err.message + '<br><br>Make sure app.py is running (uvicorn app:app --reload).</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function renderResult(data) {
+  const isAi = data.prediction.toLowerCase() === 'ai';
+  const cls = isAi ? 'ai' : 'human';
+  const label = isAi ? 'AI-GENERATED' : 'HUMAN-WRITTEN';
+  const confPct = Math.round(data.confidence * 100);
+  const filledBlocks = Math.round(confPct / 5);
+
+  let blocksHtml = '';
+  for (let i = 0; i < 20; i++) {
+    blocksHtml += `<div class="conf-block ${i < filledBlocks ? 'filled ' + cls : ''}"></div>`;
+  }
+
+  let signalsHtml = '';
+  data.top_signals.forEach(sig => {
+    const z = sig.z_score;
+    const clamped = Math.max(-3, Math.min(3, z));
+    const widthPct = Math.abs(clamped) / 3 * 50;
+    const leftPct = z >= 0 ? 50 : 50 - widthPct;
+
+    signalsHtml += `
+      <div class="signal">
+        <div class="signal-top">
+          <span class="signal-name">${sig.feature.replace(/_/g, ' ')}</span>
+          <span class="signal-z">z = ${z.toFixed(2)}</span>
+        </div>
+        <div class="signal-bar-track">
+          <div class="signal-bar-center"></div>
+          <div class="signal-bar-fill" style="left:${leftPct}%; width:${widthPct}%"></div>
+        </div>
+        <div class="signal-reason">${sig.reason}</div>
+      </div>
+    `;
+  });
+
+  const previewHtml = data.extracted_text_preview
+    ? `<div class="preview-box">${data.extracted_text_preview}</div>`
+    : '';
+
+  document.getElementById('result').innerHTML = `
+    <div class="verdict-row">
+      <span class="verdict ${cls}">${label}</span>
+    </div>
+    <div style="text-align:center" class="confidence-text">${confPct}% confidence</div>
+    <div class="conf-track">${blocksHtml}</div>
+    <div class="signals-label">TOP SIGNALS</div>
+    ${signalsHtml}
+    <div class="explanation">${data.explanation}</div>
+    ${previewHtml}
+  `;
+}
+
+function renderDocumentResult(data) {
+  const verdictLabels = { ai: 'AI-GENERATED', human: 'HUMAN-WRITTEN', mixed: 'MIXED CONTENT' };
+  const aiPct = Math.round(data.ai_fraction * 100);
+  const humanPct = 100 - aiPct;
+
+  let chunksHtml = '';
+  data.chunks.forEach(chunk => {
+    const isAi = chunk.prediction.toLowerCase() === 'ai';
+    const cls = isAi ? 'ai' : 'human';
+    const label = isAi ? 'AI' : 'HUMAN';
+    const confPct = Math.round(chunk.confidence * 100);
+
+    chunksHtml += `
+      <div class="chunk-card">
+        <div class="chunk-top">
+          <span class="chunk-badge ${cls}">${label}</span>
+          <span class="chunk-conf">${confPct}% confidence</span>
+        </div>
+        <div class="chunk-preview">${chunk.preview}${chunk.preview.length >= 180 ? '...' : ''}</div>
+      </div>
+    `;
+  });
+
+  document.getElementById('result').innerHTML = `
+    <div class="doc-summary">
+      <div class="doc-verdict ${data.overall_verdict}">${verdictLabels[data.overall_verdict]}</div>
+      <div class="doc-meta">${data.ai_chunks} of ${data.total_chunks} sections read as AI-generated (${aiPct}%)</div>
+      <div class="split-bar">
+        <div class="split-bar-ai" style="width:${aiPct}%"></div>
+        <div class="split-bar-human" style="width:${humanPct}%"></div>
+      </div>
+    </div>
+    <div class="chunks-label">SECTION BREAKDOWN</div>
+    ${chunksHtml}
+  `;
+}
+</script>
+</body>
+</html>
