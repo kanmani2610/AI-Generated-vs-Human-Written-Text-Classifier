@@ -29,6 +29,11 @@ class TextInput(BaseModel):
 
 @app.post("/analyze")
 def analyze(payload: TextInput):
+    if len(payload.text.split()) < 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Dumb!! Text is too short for reliable analysis. Please enter at least 50 words.",
+        )
     return agent.predict(payload.text)
 
 

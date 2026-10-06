@@ -464,7 +464,10 @@ async function analyzeText() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
     });
-    if (!res.ok) throw new Error('Server returned ' + res.status);
+        if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.detail || ('Server returned ' + res.status));
+    }
     return res.json();
   }, 'analyzeTextBtn');
 }
